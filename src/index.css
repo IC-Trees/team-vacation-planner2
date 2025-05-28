@@ -1,0 +1,128 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Fallback styles */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+.bg-gray-100 {
+  background-color: #f3f4f6;
+}
+.bg-blue-600 {
+  background-color: #2563eb;
+}
+.bg-white {
+  background-color: white;
+}
+.text-white {
+  color: white;
+}
+.text-gray-600 {
+  color: #4b5563;
+}
+.text-green-700 {
+  color: #15803d;
+}
+.text-yellow-700 {
+  color: #a16207;
+}
+.text-red-700 {
+  color: #b91c1c;
+}
+.bg-green-100 {
+  background-color: #dcfce7;
+}
+.bg-yellow-100 {
+  background-color: #fef3c7;
+}
+.bg-red-100 {
+  background-color: #fee2e2;
+}
+.p-3 {
+  padding: 0.75rem;
+}
+.p-4 {
+  padding: 1rem;
+}
+.p-6 {
+  padding: 1.5rem;
+}
+.px-2 {
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+}
+.py-1 {
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+}
+.shadow-md {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.rounded-lg {
+  border-radius: 0.5rem;
+}
+.rounded-full {
+  border-radius: 9999px;
+}
+.flex {
+  display: flex;
+}
+.flex-col {
+  flex-direction: column;
+}
+.items-center {
+  align-items: center;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.text-center {
+  text-align: center;
+}
+.text-xl {
+  font-size: 1.25rem;
+}
+.text-lg {
+  font-size: 1.125rem;
+}
+.text-sm {
+  font-size: 0.875rem;
+}
+.text-xs {
+  font-size: 0.75rem;
+}
+.font-semibold {
+  font-weight: 600;
+}
+.mb-4 {
+  margin-bottom: 1rem;
+}
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+.mt-auto {
+  margin-top: auto;
+}
+.space-x-2 > * + * {
+  margin-left: 0.5rem;
+}
+.space-x-4 > * + * {
+  margin-left: 1rem;
+}
+.h-screen {
+  height: 100vh;
+}
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+}

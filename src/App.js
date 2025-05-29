@@ -227,7 +227,6 @@ const VacationPlannerApp = () => {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
-});
 
   // Real-time vacation updates (mock)
   useEffect(() => {

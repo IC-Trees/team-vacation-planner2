@@ -252,9 +252,6 @@ const VacationPlannerApp = () => {
       return unsubscribe;
     }, [user]);
 
-    return unsubscribe;
-  }, [user]);
-
   // Firestore helper functions
   const saveVacationToFirestore = async (vacation) => {
     try {

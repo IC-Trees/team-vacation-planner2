@@ -228,21 +228,6 @@ const VacationPlannerApp = () => {
     };
   }, []);
 
-  // Real-time vacation updates (mock)
-  useEffect(() => {
-    if (!user) return;
-
-    // In real app, this would be:
-    // const unsubscribe = onSnapshot(collection(db, 'vacations'), (snapshot) => {
-    //   const vacationData = snapshot.docs.map(doc => ({
-    //     id: doc.id,
-    //     ...doc.data(),
-    //     start: doc.data().start.toDate(),
-    //     end: doc.data().end.toDate()
-    //   }));
-    //   setVacations(vacationData);
-    // });
-
     // Real-time vacation updates
     useEffect(() => {
       if (!user) return;

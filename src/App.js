@@ -22,10 +22,12 @@ import {
   doc,
   addDoc,
   updateDoc,
+  deleteDoc,
   onSnapshot,
   query,
   setDoc,
   getDoc,
+  getDocs,
 } from "firebase/firestore";
 // Firebase configuration (you'll need to replace this with your actual config)
 const firebaseConfig = {
@@ -188,16 +190,28 @@ const VacationPlannerApp = () => {
 
   // Firebase initialization and auth
   // Firebase initialization and auth
- useEffect(() => {
+useEffect(() => {
   // Create a fixed workspace ID that everyone shares
   const SHARED_WORKSPACE_ID = "team-vacation-workspace-2025";
   
   // Set a mock user object that represents the shared workspace
   setUser({ uid: SHARED_WORKSPACE_ID });
   
-  // For now, default to the first team member
-  // We'll improve this in Phase 2 with a name selector
-  setCurrentUser(teamMembers[0]);
+  // Load user preferences first
+  loadUserPreferences().then(() => {
+    // After preferences are loaded, check for saved current user
+    const savedUserId = localStorage.getItem('currentUserId');
+    if (savedUserId) {
+      const savedUser = teamMembers.find(m => m.id === parseInt(savedUserId));
+      if (savedUser) {
+        setCurrentUser(savedUser);
+      } else {
+        setCurrentUser(teamMembers[0]);
+      }
+    } else {
+      setCurrentUser(teamMembers[0]);
+    }
+  });
   
   console.log("Connected to shared workspace:", SHARED_WORKSPACE_ID);
 }, []);
@@ -289,6 +303,58 @@ const saveVacationToFirestore = async (vacation) => {
   }
 };
 
+// Function to save user's name preference
+const saveUserPreference = async (userId, userName) => {
+  try {
+    const SHARED_WORKSPACE_ID = "team-vacation-workspace-2025";
+    
+    // Store user preference in Firebase
+    await setDoc(
+      doc(db, "workspaces", SHARED_WORKSPACE_ID, "userPreferences", userId.toString()),
+      {
+        userId: userId,
+        userName: userName,
+        lastUpdated: new Date().toISOString()
+      }
+    );
+    
+    console.log("User preference saved:", userName);
+  } catch (error) {
+    console.error("Error saving user preference:", error);
+  }
+};
+
+// Function to load all user preferences when app starts
+const loadUserPreferences = async () => {
+  try {
+    const SHARED_WORKSPACE_ID = "team-vacation-workspace-2025";
+    
+    // Get all user preferences
+    const prefsSnapshot = await getDocs(
+      collection(db, "workspaces", SHARED_WORKSPACE_ID, "userPreferences")
+    );
+    
+    const preferences = {};
+    prefsSnapshot.forEach((doc) => {
+      const data = doc.data();
+      preferences[data.userId] = data.userName;
+    });
+    
+    // Update team members with stored names
+    setTeamMembers(prevMembers => 
+      prevMembers.map(member => ({
+        ...member,
+        name: preferences[member.id] || member.name,
+        avatar: (preferences[member.id] || member.name).charAt(0).toUpperCase()
+      }))
+    );
+    
+    console.log("User preferences loaded");
+  } catch (error) {
+    console.error("Error loading user preferences:", error);
+  }
+};  
+  
   const updateTeamMemberInFirestore = async (member) => {
     try {
       setSyncStatus("syncing");
@@ -475,23 +541,29 @@ const approveVacation = async (vacationId) => {
     return user ? user.name : "Onbekend";
   };
 
-  const updateUserName = async (newName) => {
-    const updatedUser = {
-      ...currentUser,
-      name: newName,
-      avatar: newName.charAt(0).toUpperCase(),
-    };
-
-    setTeamMembers(
-      teamMembers.map((member) =>
-        member.id === currentUser.id ? updatedUser : member
-      )
-    );
-    setCurrentUser(updatedUser);
-
-    // Save to Firestore
-    await updateTeamMemberInFirestore(updatedUser);
+const updateUserName = async (newName) => {
+  const updatedUser = {
+    ...currentUser,
+    name: newName,
+    avatar: newName.charAt(0).toUpperCase(),
   };
+
+  setTeamMembers(
+    teamMembers.map((member) =>
+      member.id === currentUser.id ? updatedUser : member
+    )
+  );
+  setCurrentUser(updatedUser);
+  
+  // Save to localStorage for persistence across refreshes
+  localStorage.setItem('currentUserId', currentUser.id.toString());
+
+  // Save to Firebase using our new function
+  await saveUserPreference(currentUser.id, newName);
+  
+  // Save to Firestore (keeping your existing function)
+  await updateTeamMemberInFirestore(updatedUser);
+};
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">

@@ -188,25 +188,19 @@ const VacationPlannerApp = () => {
 
   // Firebase initialization and auth
   // Firebase initialization and auth
-  useEffect(() => {
-    // Set up auth state listener
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        setUser(user);
-        // Find or create team member for this user
-        const member =
-          teamMembers.find((m) => m.firebaseId === user.uid) || teamMembers[0];
-        setCurrentUser(member);
-      } else {
-        // Sign in anonymously for easy access
-        signInAnonymously(auth).catch((error) => {
-          console.error("Error signing in:", error);
-        });
-      }
-    });
-
-    return unsubscribe;
-  }, []);
+ useEffect(() => {
+  // Create a fixed workspace ID that everyone shares
+  const SHARED_WORKSPACE_ID = "team-vacation-workspace-2025";
+  
+  // Set a mock user object that represents the shared workspace
+  setUser({ uid: SHARED_WORKSPACE_ID });
+  
+  // For now, default to the first team member
+  // We'll improve this in Phase 2 with a name selector
+  setCurrentUser(teamMembers[0]);
+  
+  console.log("Connected to shared workspace:", SHARED_WORKSPACE_ID);
+}, []);
 
   // Online/offline detection
   useEffect(() => {
@@ -229,57 +223,71 @@ const VacationPlannerApp = () => {
   }, []);
 
     // Real-time vacation updates
-    useEffect(() => {
-      if (!user) return;
+useEffect(() => {
+  // Only set up the listener once we have our shared workspace
+  if (!user) return;
 
-      const unsubscribe = onSnapshot(
-        collection(db, "vacations"),
-        (snapshot) => {
-          const vacationData = snapshot.docs.map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              ...data,
-              start: new Date(data.start),
-              end: new Date(data.end),
-            };
-          });
-          setVacations(vacationData);
-          setSyncStatus("synced");
-        }
-      );
-
-      return unsubscribe;
-    }, [user]);
-
-  // Firestore helper functions
-  const saveVacationToFirestore = async (vacation) => {
-    try {
-      setSyncStatus("syncing");
-      const vacationData = {
-        ...vacation,
-        start: vacation.start.toISOString(),
-        end: vacation.end.toISOString(),
-        createdAt: new Date().toISOString(),
-        createdBy: user?.uid || "anonymous",
-      };
-
-      if (vacation.id) {
-        // Update existing
-        await updateDoc(
-          doc(db, "vacations", vacation.id.toString()),
-          vacationData
-        );
-      } else {
-        // Create new
-        await addDoc(collection(db, "vacations"), vacationData);
-      }
+  const SHARED_WORKSPACE_ID = "team-vacation-workspace-2025";
+  
+  // Connect to the shared workspace collection
+  const unsubscribe = onSnapshot(
+    collection(db, "workspaces", SHARED_WORKSPACE_ID, "vacations"),
+    (snapshot) => {
+      const vacationData = snapshot.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          start: new Date(data.start),
+          end: new Date(data.end),
+        };
+      });
+      setVacations(vacationData);
       setSyncStatus("synced");
-    } catch (error) {
-      console.error("Error saving vacation:", error);
+    },
+    (error) => {
+      console.error("Error fetching vacations:", error);
       setSyncStatus("offline");
     }
-  };
+  );
+
+  return unsubscribe;
+}, [user]);
+
+  // Firestore helper functions
+const saveVacationToFirestore = async (vacation) => {
+  try {
+    setSyncStatus("syncing");
+    const SHARED_WORKSPACE_ID = "team-vacation-workspace-2025";
+    
+    const vacationData = {
+      ...vacation,
+      start: vacation.start.toISOString(),
+      end: vacation.end.toISOString(),
+      createdAt: new Date().toISOString(),
+      createdBy: vacation.userId, // Store the team member ID who created it
+      userName: getUserName(vacation.userId), // Store the name for easy reference
+    };
+
+    if (vacation.id && typeof vacation.id === 'string' && !vacation.id.toString().match(/^\d+$/)) {
+      // Update existing vacation (id is a Firestore document ID)
+      await updateDoc(
+        doc(db, "workspaces", SHARED_WORKSPACE_ID, "vacations", vacation.id),
+        vacationData
+      );
+    } else {
+      // Create new vacation
+      await addDoc(
+        collection(db, "workspaces", SHARED_WORKSPACE_ID, "vacations"),
+        vacationData
+      );
+    }
+    setSyncStatus("synced");
+  } catch (error) {
+    console.error("Error saving vacation:", error);
+    setSyncStatus("offline");
+  }
+};
 
   const updateTeamMemberInFirestore = async (member) => {
     try {
@@ -344,7 +352,7 @@ const VacationPlannerApp = () => {
       status: "created",
       approvedBy: [],
       notes: vacationForm.notes,
-      createdBy: user?.uid,
+      createdBy: currentUser.id,
     };
 
     // Update local state immediately for responsive UI
@@ -356,37 +364,36 @@ const VacationPlannerApp = () => {
     await saveVacationToFirestore(newVacation);
   };
 
-  const approveVacation = async (vacationId) => {
-    const updatedVacations = vacations.map((vacation) => {
-      if (vacation.id === vacationId) {
-        const alreadyApproved = vacation.approvedBy.includes(currentUser.id);
+const approveVacation = async (vacationId) => {
+  const vacation = vacations.find(v => v.id === vacationId);
+  if (!vacation) return;
 
-        if (!alreadyApproved) {
-          const updatedApprovedBy = [...vacation.approvedBy, currentUser.id];
-          const allTeamMembers = teamMembers
-            .filter((m) => m.id !== vacation.userId)
-            .map((m) => m.id);
-          const allApproved = allTeamMembers.every((id) =>
-            updatedApprovedBy.includes(id)
-          );
+  const alreadyApproved = vacation.approvedBy.includes(currentUser.id);
+  
+  if (!alreadyApproved) {
+    const updatedApprovedBy = [...vacation.approvedBy, currentUser.id];
+    const allTeamMembers = teamMembers
+      .filter((m) => m.id !== vacation.userId)
+      .map((m) => m.id);
+    const allApproved = allTeamMembers.every((id) =>
+      updatedApprovedBy.includes(id)
+    );
 
-          const updatedVacation = {
-            ...vacation,
-            approvedBy: updatedApprovedBy,
-            status: allApproved ? "approved" : "pending",
-          };
+    const updatedVacation = {
+      ...vacation,
+      approvedBy: updatedApprovedBy,
+      status: allApproved ? "approved" : "pending",
+    };
 
-          // Save to Firestore
-          saveVacationToFirestore(updatedVacation);
+    // Update local state immediately for responsive UI
+    setVacations(vacations.map(v => 
+      v.id === vacationId ? updatedVacation : v
+    ));
 
-          return updatedVacation;
-        }
-      }
-      return vacation;
-    });
-
-    setVacations(updatedVacations);
-  };
+    // Save to Firestore
+    await saveVacationToFirestore(updatedVacation);
+  }
+};
 
   // Utility functions
   const getVacationStatusColor = (status) => {

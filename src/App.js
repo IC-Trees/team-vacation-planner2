@@ -202,14 +202,23 @@ useEffect(() => {
     // After preferences are loaded, check for saved current user
     const savedUserId = localStorage.getItem('currentUserId');
     if (savedUserId) {
-      const savedUser = teamMembers.find(m => m.id === parseInt(savedUserId));
-      if (savedUser) {
-        setCurrentUser(savedUser);
-      } else {
-        setCurrentUser(teamMembers[0]);
-      }
+      // IMPORTANT: We need to get the updated team member after preferences are loaded
+      // Use a callback to get the latest state
+      setTeamMembers(currentMembers => {
+        const savedUser = currentMembers.find(m => m.id === parseInt(savedUserId));
+        if (savedUser) {
+          setCurrentUser(savedUser);
+        } else {
+          setCurrentUser(currentMembers[0]);
+        }
+        return currentMembers; // Return unchanged
+      });
     } else {
-      setCurrentUser(teamMembers[0]);
+      // No saved user, use the first team member
+      setTeamMembers(currentMembers => {
+        setCurrentUser(currentMembers[0]);
+        return currentMembers;
+      });
     }
   });
   

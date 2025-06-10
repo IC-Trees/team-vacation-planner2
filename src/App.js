@@ -492,16 +492,6 @@ const deleteVacation = async (vacationId) => {
   }
 };
 
-    // Update local state immediately for responsive UI
-    setVacations(vacations.map(v => 
-      v.id === vacationId ? updatedVacation : v
-    ));
-
-    // Save to Firestore
-    await saveVacationToFirestore(updatedVacation);
-  }
-};
-
   // Utility functions
   const getVacationStatusColor = (status) => {
     switch (status) {

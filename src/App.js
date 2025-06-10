@@ -54,6 +54,7 @@ const VacationPlannerApp = () => {
   const [activeView, setActiveView] = useState("calendar");
   const [calendarMode, setCalendarMode] = useState("month");
   const [showModal, setShowModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(null);
   const [showApprovalModal, setShowApprovalModal] = useState(null);
   const [selectedDateModal, setSelectedDateModal] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -459,6 +460,37 @@ const approveVacation = async (vacationId) => {
       approvedBy: updatedApprovedBy,
       status: allApproved ? "approved" : "pending",
     };
+
+    // Update local state immediately for responsive UI
+    setVacations(vacations.map(v => 
+      v.id === vacationId ? updatedVacation : v
+    ));
+
+    // Save to Firestore
+    await saveVacationToFirestore(updatedVacation);
+  }
+};
+
+// Function to delete a vacation
+const deleteVacation = async (vacationId) => {
+  try {
+    setSyncStatus("syncing");
+    const SHARED_WORKSPACE_ID = "team-vacation-workspace-2025";
+    
+    // Remove from local state immediately for responsive UI
+    setVacations(vacations.filter(v => v.id !== vacationId));
+    
+    // Delete from Firestore
+    await deleteDoc(
+      doc(db, "workspaces", SHARED_WORKSPACE_ID, "vacations", vacationId)
+    );
+    
+    setSyncStatus("synced");
+  } catch (error) {
+    console.error("Error deleting vacation:", error);
+    setSyncStatus("offline");
+  }
+};
 
     // Update local state immediately for responsive UI
     setVacations(vacations.map(v => 
@@ -1409,7 +1441,21 @@ const updateUserName = async (newName) => {
               )}
             </div>
 
-            <div className="p-3 md:p-4 border-t flex justify-end sticky bottom-0 bg-white">
+            <div className="p-3 md:p-4 border-t flex justify-between sticky bottom-0 bg-white">
+              {/* Delete button - only show for vacation creator */}
+{showModal.userId === currentUser.id && (
+  <button
+    onClick={() => {
+      setShowDeleteConfirm(showModal);
+      setShowModal(false);
+    }}
+    className="flex items-center space-x-1 bg-red-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-sm shadow-sm hover:bg-red-700 transition-colors"
+  >
+    <span>Verwijderen</span>
+  </button>
+)}
+
+<div className="flex-grow"></div>
               {showModal.userId !== currentUser.id &&
                 !showModal.approvedBy.includes(currentUser.id) &&
                 showModal.status !== "approved" && (

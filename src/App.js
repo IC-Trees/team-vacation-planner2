@@ -1452,7 +1452,11 @@ const updateUserName = async (newName) => {
                   <button
                     onClick={() => {
                       approveVacation(showModal.id);
-                      setShowModal(false);
+            
+            setShowModal(currentModal => ({
+              ...currentModal,
+              approvedBy: [...currentModal.approvedBy, currentUser.id]
+            }));
                     }}
                     className="flex items-center space-x-1 bg-green-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-sm shadow-sm hover:bg-green-700 transition-colors"
                   >

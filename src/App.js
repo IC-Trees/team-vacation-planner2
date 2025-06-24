@@ -58,6 +58,7 @@ const VacationPlannerApp = () => {
   const [showApprovalModal, setShowApprovalModal] = useState(null);
   const [selectedDateModal, setSelectedDateModal] = useState(null);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [showUserSelection, setShowUserSelection] = useState(false);
   const [editingName, setEditingName] = useState(false);
   const [newName, setNewName] = useState("");
 
@@ -67,91 +68,90 @@ const VacationPlannerApp = () => {
   const [syncStatus, setSyncStatus] = useState("synced"); // 'syncing', 'synced', 'offline'
 
   // Data state
-  const [teamMembers, setTeamMembers] = useState([
+ const [teamMembers, setTeamMembers] = useState([
     {
       id: 1,
-      name: "Jan Jansen",
-      role: "Developer",
-      avatar: "J",
-      firebaseId: "user123",
+      name: "Anne Marie",
+      role: "Team Member",
+      avatar: "A",
+      firebaseId: "user001",
     },
     {
       id: 2,
-      name: "Emma de Vries",
-      role: "Designer",
-      avatar: "E",
-      firebaseId: "user456",
+      name: "Bas",
+      role: "Team Member",
+      avatar: "B",
+      firebaseId: "user002",
     },
     {
       id: 3,
-      name: "Lucas Bakker",
-      role: "Project Manager",
-      avatar: "L",
-      firebaseId: "user789",
+      name: "Chantal",
+      role: "Team Member",
+      avatar: "C",
+      firebaseId: "user003",
     },
     {
       id: 4,
-      name: "Sophie Visser",
-      role: "Marketing",
-      avatar: "S",
-      firebaseId: "user012",
+      name: "Lynn",
+      role: "Team Member",
+      avatar: "L",
+      firebaseId: "user004",
     },
     {
       id: 5,
-      name: "Tim Hendriks",
-      role: "Developer",
-      avatar: "T",
-      firebaseId: "user345",
+      name: "Sandra",
+      role: "Team Member",
+      avatar: "S",
+      firebaseId: "user005",
+    },
+    {
+      id: 6,
+      name: "Margot",
+      role: "Team Member",
+      avatar: "M",
+      firebaseId: "user006",
+    },
+    {
+      id: 7,
+      name: "Ingeborg",
+      role: "Team Member",
+      avatar: "I",
+      firebaseId: "user007",
+    },
+    {
+      id: 8,
+      name: "Sjors",
+      role: "Team Member",
+      avatar: "S",
+      firebaseId: "user008",
+    },
+    {
+      id: 9,
+      name: "Eline",
+      role: "Team Member",
+      avatar: "E",
+      firebaseId: "user009",
+    },
+    {
+      id: 10,
+      name: "Devin",
+      role: "Team Member",
+      avatar: "D",
+      firebaseId: "user010",
+    },
+    {
+      id: 11,
+      name: "Frans",
+      role: "Team Member",
+      avatar: "F",
+      firebaseId: "user011",
     },
   ]);
 
-  const [vacations, setVacations] = useState([
-    {
-      id: 1,
-      userId: 1,
-      start: new Date(2025, 3, 5),
-      end: new Date(2025, 3, 12),
-      status: "approved",
-      approvedBy: [2, 3, 4, 5],
-      createdBy: "user123",
-    },
-    {
-      id: 2,
-      userId: 2,
-      start: new Date(2025, 3, 15),
-      end: new Date(2025, 3, 22),
-      status: "pending",
-      approvedBy: [1, 3],
-      createdBy: "user456",
-    },
-    {
-      id: 3,
-      userId: 3,
-      start: new Date(2025, 3, 25),
-      end: new Date(2025, 3, 28),
-      status: "created",
-      approvedBy: [],
-      createdBy: "user789",
-    },
-    {
-      id: 4,
-      userId: 4,
-      start: new Date(2025, 4, 10),
-      end: new Date(2025, 4, 15),
-      status: "approved",
-      approvedBy: [1, 2, 3, 5],
-      createdBy: "user012",
-    },
-    {
-      id: 5,
-      userId: 5,
-      start: new Date(2025, 4, 20),
-      end: new Date(2025, 4, 27),
-      status: "pending",
-      approvedBy: [1, 2],
-      createdBy: "user345",
-    },
-  ]);
+ const [vacations, setVacations] = useState([
+  // Start with an empty array - real vacations will be loaded from Firebase
+  // Any existing vacations in Firebase will appear automatically
+]);
 
   const [vacationForm, setVacationForm] = useState({
     startDate: "",
@@ -203,23 +203,20 @@ useEffect(() => {
     // After preferences are loaded, check for saved current user
     const savedUserId = localStorage.getItem('currentUserId');
     if (savedUserId) {
-      // IMPORTANT: We need to get the updated team member after preferences are loaded
-      // Use a callback to get the latest state
+      // We have a saved user, use them
       setTeamMembers(currentMembers => {
         const savedUser = currentMembers.find(m => m.id === parseInt(savedUserId));
         if (savedUser) {
           setCurrentUser(savedUser);
         } else {
-          setCurrentUser(currentMembers[0]);
+          // Saved user not found, show selection screen
+          setShowUserSelection(true);
         }
-        return currentMembers; // Return unchanged
-      });
-    } else {
-      // No saved user, use the first team member
-      setTeamMembers(currentMembers => {
-        setCurrentUser(currentMembers[0]);
         return currentMembers;
       });
+    } else {
+      // No saved user, show the selection screen
+      setShowUserSelection(true);
     }
   });
   
@@ -1515,6 +1512,46 @@ const updateUserName = async (newName) => {
               >
                 Verwijderen
               </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+{/* User Selection Modal - Shows when first visiting */}
+      {showUserSelection && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-3 md:p-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="p-3 md:p-4 border-b border-gray-200 bg-gray-50 rounded-t-lg">
+              <h2 className="text-base md:text-lg font-semibold text-gray-800">
+                Wie ben jij?
+              </h2>
+              <p className="text-xs md:text-sm text-gray-600 mt-1">
+                Selecteer je naam uit de lijst
+              </p>
+            </div>
+
+            <div className="p-3 md:p-4">
+              <div className="space-y-2">
+                {teamMembers.map((member) => (
+                  <button
+                    key={member.id}
+                    onClick={() => {
+                      setCurrentUser(member);
+                      localStorage.setItem('currentUserId', member.id.toString());
+                      setShowUserSelection(false);
+                    }}
+                    className="w-full flex items-center space-x-3 p-3 rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold">
+                      {member.avatar}
+                    </div>
+                    <div className="text-left">
+                      <div className="font-medium">{member.name}</div>
+                      <div className="text-xs text-gray-500">{member.role}</div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>

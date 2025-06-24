@@ -25,6 +25,7 @@ import {
   deleteDoc,
   onSnapshot,
   query,
+  where,
   setDoc,
   getDoc,
   getDocs,
@@ -477,15 +478,32 @@ const deleteVacation = async (vacationId) => {
     // Remove from local state immediately for responsive UI
     setVacations(vacations.filter(v => v.id !== vacationId));
     
-    // Delete from Firestore
-    await deleteDoc(
-      doc(db, "workspaces", SHARED_WORKSPACE_ID, "vacations", vacationId)
-    );
+    // Here's the fix: We need to find the Firebase document first!
+    // Query for the vacation with this ID
+    const vacationsRef = collection(db, "workspaces", SHARED_WORKSPACE_ID, "vacations");
+    const q = query(vacationsRef, where("id", "==", vacationId));
+    const querySnapshot = await getDocs(q);
+    
+    // Delete each matching document (should only be one)
+    const deletePromises = [];
+    querySnapshot.forEach((doc) => {
+      console.log("Deleting vacation document:", doc.id);
+      deletePromises.push(deleteDoc(doc.ref));
+    });
+    
+    // Wait for all deletions to complete
+    await Promise.all(deletePromises);
     
     setSyncStatus("synced");
+    console.log("Vacation deleted successfully!");
+    
   } catch (error) {
     console.error("Error deleting vacation:", error);
     setSyncStatus("offline");
+    
+    // If deletion failed, we should reload to keep UI in sync
+    alert("Er ging iets mis bij het verwijderen. De pagina wordt vernieuwd.");
+    window.location.reload();
   }
 };
 

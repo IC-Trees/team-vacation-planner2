@@ -1082,7 +1082,7 @@ const updateUserName = async (newName) => {
                             <div
                               key={vacation.id}
                               className="flex items-center border border-gray-200 rounded-lg p-2 md:p-3 hover:shadow-md transition-shadow cursor-pointer bg-white"
-                              onClick={() => setShowApprovalModal(vacation)}
+                              onClick={() => setShowModal(vacation)}
                             >
                               <div
                                 className={`w-3 md:w-4 h-3 md:h-4 rounded-full ${getVacationStatusColor(
@@ -1472,6 +1472,49 @@ const updateUserName = async (newName) => {
                     <span>Je hebt deze vakantie al goedgekeurd</span>
                   </div>
                 )}
+            </div>
+          </div>
+        </div>
+      )}
+
+{/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 md:p-4 z-30">
+          <div className="bg-white rounded-lg shadow-lg w-full max-w-sm">
+            <div className="p-3 md:p-4 border-b border-gray-200">
+              <h2 className="text-base md:text-lg font-semibold text-gray-800">
+                Vakantie verwijderen?
+              </h2>
+            </div>
+            
+            <div className="p-3 md:p-4">
+              <p className="text-sm md:text-base text-gray-700">
+                Weet je zeker dat je deze vakantie wilt verwijderen?
+              </p>
+              <div className="mt-2 text-xs md:text-sm text-gray-600">
+                <p>
+                  Periode: {showDeleteConfirm.start.toLocaleDateString("nl-NL")} t/m{" "}
+                  {showDeleteConfirm.end.toLocaleDateString("nl-NL")}
+                </p>
+              </div>
+            </div>
+            
+            <div className="p-3 md:p-4 border-t flex justify-end space-x-2">
+              <button
+                onClick={() => setShowDeleteConfirm(null)}
+                className="px-3 md:px-4 py-1.5 md:py-2 border border-gray-300 rounded-md text-sm hover:bg-gray-100 transition-colors"
+              >
+                Annuleren
+              </button>
+              <button
+                onClick={() => {
+                  deleteVacation(showDeleteConfirm.id);
+                  setShowDeleteConfirm(null);
+                }}
+                className="px-3 md:px-4 py-1.5 md:py-2 bg-red-600 text-white rounded-md text-sm shadow-sm hover:bg-red-700 transition-colors"
+              >
+                Verwijderen
+              </button>
             </div>
           </div>
         </div>

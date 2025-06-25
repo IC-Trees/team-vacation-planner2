@@ -273,6 +273,22 @@ useEffect(() => {
     }
   );
 
+// Auto-cleanup check
+  const lastCleanup = localStorage.getItem('lastVacationCleanup');
+  const today = new Date().toDateString();
+  
+  if (lastCleanup !== today) {
+    console.log("📅 Scheduling daily cleanup check...");
+    
+    setTimeout(() => {
+      console.log("🔍 Checking for old vacations to clean up...");
+      cleanupOldVacations();
+      localStorage.setItem('lastVacationCleanup', today);
+    }, 2000);
+  } else {
+    console.log("✅ Already ran cleanup today, skipping.");
+  }
+  
   return unsubscribe;
 }, [user]);
 
@@ -526,6 +542,91 @@ const deleteVacation = async (vacationId) => {
   }
 };
 
+// Auto-cleanup function to remove old vacations
+const cleanupOldVacations = async () => {
+  try {
+    const SHARED_WORKSPACE_ID = "team-vacation-workspace-2025";
+    
+    // Calculate the date 3 months ago from today
+    const THREE_MONTHS_AGO = new Date();
+    THREE_MONTHS_AGO.setMonth(THREE_MONTHS_AGO.getMonth() - 3);
+    
+    console.log("🧹 Starting vacation cleanup...");
+    console.log(`Will remove vacations that ended before: ${THREE_MONTHS_AGO.toLocaleDateString('nl-NL')}`);
+    
+    // Get all vacations from Firestore
+    const vacationsRef = collection(db, "workspaces", SHARED_WORKSPACE_ID, "vacations");
+    const snapshot = await getDocs(vacationsRef);
+    
+    // Keep track of what we're doing
+    const deletePromises = [];
+    let cleanupCount = 0;
+    const deletedVacations = []; // Track what we delete for logging
+    
+    snapshot.forEach((doc) => {
+      const vacation = doc.data();
+      
+      // Convert the end date to a JavaScript Date object
+      // Firestore dates need special handling
+      let endDate;
+      if (vacation.end && vacation.end.toDate) {
+        // It's a Firestore Timestamp
+        endDate = vacation.end.toDate();
+      } else if (vacation.end) {
+        // It's already a date string or object
+        endDate = new Date(vacation.end);
+      } else {
+        // Skip if no end date
+        return;
+      }
+      
+      // Check if this vacation ended more than 3 months ago
+      if (endDate < THREE_MONTHS_AGO) {
+        // Find the user's name for logging
+        const user = teamMembers.find(m => m.id === vacation.userId);
+        const userName = user ? user.name : "Unknown";
+        
+        console.log(`📅 Deleting old vacation: ${userName} (${endDate.toLocaleDateString('nl-NL')})`);
+        
+        // Add to our list of vacations to delete
+        deletedVacations.push({
+          userName,
+          endDate: endDate.toLocaleDateString('nl-NL')
+        });
+        
+        // Schedule this document for deletion
+        deletePromises.push(deleteDoc(doc.ref));
+        cleanupCount++;
+      }
+    });
+    
+    // Execute all deletions at once (more efficient)
+    if (deletePromises.length > 0) {
+      await Promise.all(deletePromises);
+      console.log(`✅ Cleanup complete! Removed ${cleanupCount} old vacation${cleanupCount !== 1 ? 's' : ''}`);
+      
+      // Show a brief notification to the user (optional)
+      // You can comment this out if you prefer silent cleanup
+      if (cleanupCount > 0) {
+        const message = `Opgeruimd: ${cleanupCount} oude vakantie${cleanupCount !== 1 ? 's' : ''}`;
+        // If you have a notification system, use it here
+        // For now, we'll just log it
+        console.log(`Notification: ${message}`);
+      }
+      
+      // Reload vacations to update the UI
+      await loadVacations();
+    } else {
+      console.log("✨ No old vacations to clean up - everything looks fresh!");
+    }
+    
+  } catch (error) {
+    console.error("❌ Error during vacation cleanup:", error);
+    // Don't show error to user - this is a background task
+    // The app should continue working even if cleanup fails
+  }
+};
+  
   // Utility functions
   const getVacationStatusColor = (status) => {
     switch (status) {

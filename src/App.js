@@ -469,6 +469,25 @@ const approveVacation = async (vacationId) => {
   }
 };
 
+// Helper function to get approver names
+const getApproverNames = (vacation) => {
+  // Check if anyone has approved yet
+  if (!vacation.approvedBy || vacation.approvedBy.length === 0) {
+    return "Nog niemand";
+  }
+  
+  // Convert approver IDs to actual names
+  const approverNames = vacation.approvedBy
+    .map(approverId => {
+      // Find the team member with this ID
+      const approver = teamMembers.find(m => m.id === approverId);
+      return approver ? approver.name : "Onbekend";
+    })
+    .join(", "); // Join names with comma and space
+  
+  return approverNames; // Just return the names, no prefix
+};
+  
 // Function to delete a vacation
 const deleteVacation = async (vacationId) => {
   try {
@@ -1423,16 +1442,34 @@ const updateUserName = async (newName) => {
                 </div>
               </div>
 
-              <div className="flex justify-between">
-                <span className="font-medium text-sm md:text-base">
-                  Goedgekeurd door:
-                </span>
-                <span className="text-sm md:text-base">
-                  {showModal.approvedBy.length
-                    ? `${showModal.approvedBy.length} teamleden`
-                    : "Nog niemand"}
-                </span>
-              </div>
+              <div>
+  <div className="flex justify-between">
+    <span className="font-medium text-sm md:text-base">
+      Goedgekeurd door:
+    </span>
+    <span className="text-sm md:text-base">
+      {getApproverNames(showModal)}
+    </span>
+  </div>
+  
+  {/* Show who still needs to approve - only if not everyone has approved yet */}
+  {showModal.approvedBy.length > 0 && 
+   showModal.approvedBy.length < teamMembers.filter(m => m.id !== showModal.userId).length && (
+    <div className="mt-1 ml-4">
+      <span className="text-xs md:text-sm text-gray-500">
+        Wacht nog op: {
+          teamMembers
+            .filter(m => 
+              m.id !== showModal.userId && // Not the person who requested
+              !showModal.approvedBy.includes(m.id) // Haven't approved yet
+            )
+            .map(m => m.name)
+            .join(", ")
+        }
+      </span>
+    </div>
+  )}
+</div>
 
               {showModal.notes && (
                 <div className="mt-2">

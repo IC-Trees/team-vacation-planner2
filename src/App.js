@@ -163,33 +163,36 @@ const VacationPlannerApp = () => {
 
   const [currentUser, setCurrentUser] = useState(teamMembers[0]);
 
-  // Nederlandse officiële feestdagen
-  const dutchHolidays = [
-    // 2025
-    { date: new Date(2025, 0, 1), name: "Nieuwjaarsdag" },
-    { date: new Date(2025, 3, 18), name: "Goede Vrijdag" },
-    { date: new Date(2025, 3, 20), name: "Eerste Paasdag" },
-    { date: new Date(2025, 3, 21), name: "Tweede Paasdag" },
-    { date: new Date(2025, 3, 26), name: "Koningsdag" },
-    { date: new Date(2025, 4, 5), name: "Bevrijdingsdag" },
-    { date: new Date(2025, 4, 29), name: "Hemelvaartsdag" },
-    { date: new Date(2025, 5, 8), name: "Eerste Pinksterdag" },
-    { date: new Date(2025, 5, 9), name: "Tweede Pinksterdag" },
-    { date: new Date(2025, 11, 25), name: "Eerste Kerstdag" },
-    { date: new Date(2025, 11, 26), name: "Tweede Kerstdag" },
-
-    // 2026-2027 (basic holidays - Easter dates need calculation)
-    { date: new Date(2026, 0, 1), name: "Nieuwjaarsdag" },
-    { date: new Date(2026, 3, 27), name: "Koningsdag" },
-    { date: new Date(2026, 4, 5), name: "Bevrijdingsdag" },
-    { date: new Date(2026, 11, 25), name: "Eerste Kerstdag" },
-    { date: new Date(2026, 11, 26), name: "Tweede Kerstdag" },
-    { date: new Date(2027, 0, 1), name: "Nieuwjaarsdag" },
-    { date: new Date(2027, 3, 27), name: "Koningsdag" },
-    { date: new Date(2027, 4, 5), name: "Bevrijdingsdag" },
-    { date: new Date(2027, 11, 25), name: "Eerste Kerstdag" },
-    { date: new Date(2027, 11, 26), name: "Tweede Kerstdag" },
+// Helper function to generate fixed Dutch holidays for a given year
+const getFixedHolidaysForYear = (year) => {
+  return [
+    { date: new Date(year, 0, 1), name: "Nieuwjaarsdag" },
+    { date: new Date(year, 3, 27), name: "Koningsdag" }, // April 27
+    { date: new Date(year, 4, 5), name: "Bevrijdingsdag" }, // May 5
+    { date: new Date(year, 11, 25), name: "Eerste Kerstdag" }, // December 25
+    { date: new Date(year, 11, 26), name: "Tweede Kerstdag" }, // December 26
   ];
+};
+  
+  // Nederlandse officiële feestdagen
+const dutchHolidays = [
+  // 2025 - Complete with Easter-based holidays
+  { date: new Date(2025, 0, 1), name: "Nieuwjaarsdag" },
+  { date: new Date(2025, 3, 18), name: "Goede Vrijdag" },
+  { date: new Date(2025, 3, 20), name: "Eerste Paasdag" },
+  { date: new Date(2025, 3, 21), name: "Tweede Paasdag" },
+  { date: new Date(2025, 3, 26), name: "Koningsdag" }, // Saturday, so celebrated on the 26th
+  { date: new Date(2025, 4, 5), name: "Bevrijdingsdag" },
+  { date: new Date(2025, 4, 29), name: "Hemelvaartsdag" },
+  { date: new Date(2025, 5, 8), name: "Eerste Pinksterdag" },
+  { date: new Date(2025, 5, 9), name: "Tweede Pinksterdag" },
+  { date: new Date(2025, 11, 25), name: "Eerste Kerstdag" },
+  { date: new Date(2025, 11, 26), name: "Tweede Kerstdag" },
+  
+  // Generate fixed holidays for 2026-2035
+  ...Array.from({ length: 10 }, (_, i) => i + 2026)
+    .flatMap(year => getFixedHolidaysForYear(year))
+];
 
   // Firebase initialization and auth
   // Firebase initialization and auth

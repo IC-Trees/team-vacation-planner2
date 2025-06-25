@@ -9,6 +9,7 @@ import {
   Check,
   Clock,
   Plus,
+  RefreshCw,
   Download,
   Wifi,
   WifiOff,
@@ -69,6 +70,18 @@ const VacationPlannerApp = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [syncStatus, setSyncStatus] = useState("synced"); // 'syncing', 'synced', 'offline'
 
+// Function to allow users to change their selection
+  const changeUser = () => {
+    // Clear the saved user from localStorage
+    localStorage.removeItem('currentUserId');
+    
+    // Show the user selection modal again
+    setShowUserSelection(true);
+    
+    // Log for debugging (you can remove this later)
+    console.log("User requested to change user - showing selection modal");
+  };
+  
   // Data state
  const [teamMembers, setTeamMembers] = useState([
     {
@@ -817,6 +830,13 @@ const updateUserName = async (newName) => {
                 {currentUser.avatar}
               </div>
               <span className="hidden md:inline">{currentUser.name}</span>
+                  <button
+  onClick={changeUser}
+  className="p-1 rounded hover:bg-gray-100 transition-colors"
+  title="Wissel van gebruiker"
+>
+  <RefreshCw className="h-4 w-4 text-gray-600" />
+</button>
             </div>
           </div>
         </div>

@@ -12,6 +12,7 @@ import {
   Download,
   Wifi,
   WifiOff,
+  X,
 } from "lucide-react";
 
 import { initializeApp } from "firebase/app";
@@ -493,6 +494,41 @@ const approveVacation = async (vacationId) => {
   }
 };
 
+// Function to undo/remove an approval
+const removeApproval = async (vacationId) => {
+  const vacation = vacations.find(v => v.id === vacationId);
+  if (!vacation) return;
+
+  const hasApproved = vacation.approvedBy.includes(currentUser.id);
+  
+  if (hasApproved) {
+    // Remove current user from the approvedBy array
+    const updatedApprovedBy = vacation.approvedBy.filter(id => id !== currentUser.id);
+    
+    // Determine the new status
+    let newStatus = "created"; // Default to created if no approvals
+    if (updatedApprovedBy.length > 0) {
+      newStatus = "pending"; // Still has some approvals, so it's pending
+    }
+
+    const updatedVacation = {
+      ...vacation,
+      approvedBy: updatedApprovedBy,
+      status: newStatus,
+    };
+
+    // Update local state immediately for responsive UI
+    setVacations(vacations.map(v => 
+      v.id === vacationId ? updatedVacation : v
+    ));
+
+    // Save to Firestore
+    await saveVacationToFirestore(updatedVacation);
+    
+    console.log("Approval removed for vacation:", vacationId);
+  }
+};  
+  
 // Helper function to get approver names
 const getApproverNames = (vacation) => {
   // Check if anyone has approved yet
@@ -1607,32 +1643,41 @@ const updateUserName = async (newName) => {
 )}
 
 <div className="flex-grow"></div>
-              {showModal.userId !== currentUser.id &&
-                !showModal.approvedBy.includes(currentUser.id) &&
-                showModal.status !== "approved" && (
-                  <button
-                    onClick={() => {
-                      approveVacation(showModal.id);
-            
-            setShowModal(currentModal => ({
-              ...currentModal,
-              approvedBy: [...currentModal.approvedBy, currentUser.id]
-            }));
-                    }}
-                    className="flex items-center space-x-1 bg-green-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-sm shadow-sm hover:bg-green-700 transition-colors"
-                  >
-                    <Check className="h-3.5 md:h-4 w-3.5 md:w-4" />
-                    <span>Goedkeuren</span>
-                  </button>
-                )}
-
-              {showModal.userId !== currentUser.id &&
-                showModal.approvedBy.includes(currentUser.id) && (
-                  <div className="text-green-600 flex items-center space-x-1 text-sm">
-                    <Check className="h-3.5 md:h-4 w-3.5 md:w-4" />
-                    <span>Je hebt deze vakantie al goedgekeurd</span>
-                  </div>
-                )}
+              {showModal.userId !== currentUser.id && (
+  <>
+    {!showModal.approvedBy.includes(currentUser.id) && showModal.status !== "approved" ? (
+      <button
+        onClick={() => {
+          approveVacation(showModal.id);
+          setShowModal(currentModal => ({
+            ...currentModal,
+            approvedBy: [...currentModal.approvedBy, currentUser.id]
+          }));
+        }}
+        className="flex items-center space-x-1 bg-green-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-sm shadow-sm hover:bg-green-700 transition-colors"
+      >
+        <Check className="h-3.5 md:h-4 w-3.5 md:w-4" />
+        <span>Goedkeuren</span>
+      </button>
+    ) : showModal.approvedBy.includes(currentUser.id) ? (
+      <button
+        onClick={() => {
+          removeApproval(showModal.id);
+          // Update the modal to reflect the change
+          setShowModal(currentModal => ({
+            ...currentModal,
+            approvedBy: currentModal.approvedBy.filter(id => id !== currentUser.id),
+            status: currentModal.approvedBy.length === 1 ? "created" : "pending"
+          }));
+        }}
+        className="flex items-center space-x-1 bg-gray-600 text-white px-3 md:px-4 py-1.5 md:py-2 rounded-md text-sm shadow-sm hover:bg-gray-700 transition-colors"
+      >
+        <X className="h-3.5 md:h-4 w-3.5 md:w-4" />
+        <span>Goedkeuring intrekken</span>
+      </button>
+    ) : null}
+  </>
+)}
             </div>
           </div>
         </div>

@@ -302,22 +302,30 @@ const saveVacationToFirestore = async (vacation) => {
       ...vacation,
       start: vacation.start.toISOString(),
       end: vacation.end.toISOString(),
-      createdAt: new Date().toISOString(),
-      createdBy: vacation.userId, // Store the team member ID who created it
-      userName: getUserName(vacation.userId), // Store the name for easy reference
+      createdAt: vacation.createdAt || new Date().toISOString(),
+      createdBy: vacation.userId,
+      userName: getUserName(vacation.userId),
+      // Preserve these fields to prevent data loss
+      approvedBy: vacation.approvedBy || [],
+      status: vacation.status || "created"
     };
 
-    if (vacation.id && typeof vacation.id === 'string' && !vacation.id.toString().match(/^\d+$/)) {
-      // Update existing vacation (id is a Firestore document ID)
+    // Simplified check: if ID is a string, it's from Firebase
+    if (vacation.id && typeof vacation.id === 'string') {
+      // Update existing vacation
+      console.log("Updating existing vacation:", vacation.id);
       await updateDoc(
         doc(db, "workspaces", SHARED_WORKSPACE_ID, "vacations", vacation.id),
         vacationData
       );
     } else {
       // Create new vacation
+      console.log("Creating new vacation");
+      // Remove the temporary numeric ID before saving
+      const { id, ...dataToSave } = vacationData;
       await addDoc(
         collection(db, "workspaces", SHARED_WORKSPACE_ID, "vacations"),
-        vacationData
+        dataToSave
       );
     }
     setSyncStatus("synced");
